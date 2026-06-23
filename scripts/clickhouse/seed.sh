@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-COMPOSE="docker compose -f ${ROOT}/docker-compose.yml"
+COMPOSE="docker compose -f ${ROOT}/docker-compose.yml -f ${ROOT}/docker-compose.local.yml"
 CLIENT="${COMPOSE} exec -T clickhouse clickhouse-client --multiquery"
 SEED_FILE="${1:-${ROOT}/scripts/clickhouse/seed-dev.sql}"
 

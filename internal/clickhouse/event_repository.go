@@ -32,6 +32,18 @@ type DomainMetrics struct {
 	SpamRatePct     float64 `json:"spam_rate_pct"`
 }
 
+type SendingIPMetrics struct {
+	CompanyID       int32   `json:"company_id"`
+	SendingIP       string  `json:"sending_ip"`
+	Sent            uint64  `json:"sent"`
+	Delivered       uint64  `json:"delivered"`
+	Bounced         uint64  `json:"bounced"`
+	SpamBounced     uint64  `json:"spam_bounced"`
+	BounceRatePct   float64 `json:"bounce_rate_pct"`
+	DeliveryRatePct float64 `json:"delivery_rate_pct"`
+	SpamRatePct     float64 `json:"spam_rate_pct"`
+}
+
 type CompanyRiskSummary struct {
 	CompanyID         int32   `json:"company_id"`
 	AffectedAccounts  uint64  `json:"affected_accounts"`
@@ -265,6 +277,88 @@ ORDER BY bounce_rate_pct DESC
 	return results, nil
 }
 
+func (r *EventRepository) DetectAtRiskSendingIPs(
+	ctx context.Context,
+	companyID *int32,
+	window time.Duration,
+	minVolume uint64,
+	bounceThresholdPct float64,
+	spamThresholdPct float64,
+) ([]SendingIPMetrics, error) {
+	secs := windowSeconds(window)
+
+	companyFilter := ""
+	args := []interface{}{}
+	if companyID != nil {
+		companyFilter = " AND company_id = ?"
+		args = append(args, *companyID)
+	}
+	args = append(args, minVolume, bounceThresholdPct, spamThresholdPct)
+
+	query := fmt.Sprintf(`
+SELECT
+    company_id,
+    sending_ip,
+    sent,
+    delivered,
+    bounced,
+    spam_bounced,
+    if(sent > 0, bounced / sent * 100, 0) AS bounce_rate_pct,
+    if(sent > 0, delivered / sent * 100, 0) AS delivery_rate_pct,
+    if(sent > 0, spam_bounced / sent * 100, 0) AS spam_rate_pct
+FROM (
+    SELECT
+        company_id,
+        sending_ip,
+        countIf(type = 'injection') AS sent,
+        countIf(type = 'delivery') AS delivered,
+        countIf(type = 'bounce') AS bounced,
+        countIf(type = 'bounce' AND bounce_classification_code IN (50, 51, 52, 53, 54)) AS spam_bounced
+    FROM default.event
+    WHERE injection_time >= now() - INTERVAL %d SECOND
+      AND injection_time < now()
+      AND sending_ip IS NOT NULL
+      AND sending_ip != ''%s
+    GROUP BY company_id, sending_ip
+    HAVING sent >= ?
+)
+WHERE bounce_rate_pct > ? OR spam_rate_pct > ?
+ORDER BY bounce_rate_pct DESC
+`, secs, companyFilter)
+
+	rows, err := r.conn.Query(ctx, query, args...)
+	if err != nil {
+		return emptySendingIPs(), fmt.Errorf("detect at-risk sending IPs query: %w", err)
+	}
+	defer rows.Close()
+
+	var results []SendingIPMetrics
+	for rows.Next() {
+		var m SendingIPMetrics
+		if err := rows.Scan(
+			&m.CompanyID,
+			&m.SendingIP,
+			&m.Sent,
+			&m.Delivered,
+			&m.Bounced,
+			&m.SpamBounced,
+			&m.BounceRatePct,
+			&m.DeliveryRatePct,
+			&m.SpamRatePct,
+		); err != nil {
+			return emptySendingIPs(), fmt.Errorf("scan at-risk sending IP row: %w", err)
+		}
+		results = append(results, m)
+	}
+	if err := rows.Err(); err != nil {
+		return emptySendingIPs(), err
+	}
+	if results == nil {
+		return emptySendingIPs(), nil
+	}
+	return results, nil
+}
+
 func (r *EventRepository) GetAtRiskSummary(
 	ctx context.Context,
 	window time.Duration,
@@ -329,6 +423,10 @@ func emptyMetrics() []SubAccountMetrics {
 
 func emptyDomains() []DomainMetrics {
 	return []DomainMetrics{}
+}
+
+func emptySendingIPs() []SendingIPMetrics {
+	return []SendingIPMetrics{}
 }
 
 func emptySummary() []CompanyRiskSummary {

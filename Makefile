@@ -1,8 +1,9 @@
-.PHONY: help install install-backend install-web backend frontend dev build build-backend build-web run-bin test env clean docker-up docker-down infra-up infra-down clickhouse-up clickhouse-down clickhouse-seed clickhouse-seed-287 clickhouse-reset clickhouse-client
+.PHONY: help install install-backend install-web backend frontend dev build build-backend build-web run-bin test env clean docker-up docker-down docker-pull docker-push infra-up infra-down clickhouse-up clickhouse-down clickhouse-seed clickhouse-seed-287 clickhouse-seed-7 clickhouse-reset clickhouse-client
 
 BACKEND_PORT ?= 8080
 WEB_PORT     ?= 5173
 COMPOSE      ?= docker compose
+COMPOSE_LOCAL = $(COMPOSE) -f docker-compose.yml -f docker-compose.local.yml
 
 help: ## Show available targets
 	@echo "Mailtarget Sentinel — Makefile"
@@ -49,19 +50,29 @@ clean: ## Remove build artifacts
 	rm -rf bin/ web/dist web/node_modules/.vite
 	go clean -cache -testcache 2>/dev/null || true
 
-docker-up: ## docker compose up --build
-	docker compose up --build
+docker-up: ## docker compose up -d (VM / production stack)
+	$(COMPOSE) up -d
 
 docker-down: ## docker compose down
 	$(COMPOSE) down
 
+docker-pull: ## Pull images from reg.mailtarget.dev/mailtarget
+	$(COMPOSE) pull
+
+docker-push: ## Build and push images to reg.mailtarget.dev/mailtarget
+	@chmod +x scripts/docker-push.sh
+	@scripts/docker-push.sh
+
+docker-up-local: ## Local stack with ClickHouse container
+	$(COMPOSE_LOCAL) up -d --build
+
 infra-up: ## Start ClickHouse + Redis for local dev (make backend / make dev)
-	$(COMPOSE) up -d clickhouse redis
+	$(COMPOSE_LOCAL) up -d clickhouse redis
 	@echo "ClickHouse native :9000 | HTTP :8123 | Redis :6379"
 	@echo "Run 'make clickhouse-seed' to load sample events"
 
 infra-down: ## Stop ClickHouse + Redis
-	$(COMPOSE) stop clickhouse redis
+	$(COMPOSE_LOCAL) stop clickhouse redis
 
 clickhouse-up: infra-up ## Alias for infra-up
 
@@ -77,6 +88,11 @@ clickhouse-seed-287: ## Seed company_id=287 sub_account_id=4302 (anomaly ~8% bou
 	@scripts/clickhouse/seed.sh scripts/clickhouse/seed-company-287.sql
 	@$(MAKE) --no-print-directory _trigger-worker
 
+clickhouse-seed-7: ## Seed company_id=7 sub_account_id=239 (anomaly ~8% bounce)
+	@chmod +x scripts/clickhouse/seed.sh
+	@scripts/clickhouse/seed.sh scripts/clickhouse/seed-company-7.sql
+	@$(MAKE) --no-print-directory _trigger-worker
+
 _trigger-worker:
 	@echo "Triggering worker to record history …"
 	@-curl -s -X POST http://localhost:$(BACKEND_PORT)/api/v1/sentinel/worker/run \
@@ -88,12 +104,12 @@ worker-run: ## Trigger detection worker manually (populate history)
 		-H "Authorization: Bearer $$(grep SENTINEL_ADMIN_TOKEN .env 2>/dev/null | cut -d= -f2-)" | jq .
 
 clickhouse-reset: ## Wipe ClickHouse volume and re-init schema
-	$(COMPOSE) down clickhouse
+	$(COMPOSE_LOCAL) down clickhouse
 	docker volume rm mailtarget-sentinel_clickhouse_data 2>/dev/null || true
-	$(COMPOSE) up -d clickhouse
+	$(COMPOSE_LOCAL) up -d clickhouse
 	@echo "Waiting for ClickHouse …"
-	@until $(COMPOSE) exec clickhouse wget -q -O- http://localhost:8123/ping >/dev/null 2>&1; do sleep 1; done
+	@until $(COMPOSE_LOCAL) exec clickhouse wget -q -O- http://localhost:8123/ping >/dev/null 2>&1; do sleep 1; done
 	@echo "ClickHouse ready. Run 'make clickhouse-seed' for sample data."
 
 clickhouse-client: ## Open clickhouse-client shell
-	$(COMPOSE) exec clickhouse clickhouse-client
+	$(COMPOSE_LOCAL) exec clickhouse clickhouse-client

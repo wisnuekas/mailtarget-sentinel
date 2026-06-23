@@ -18,11 +18,12 @@ func NewSubAccountRepository(pool *pgxpool.Pool) *SubAccountRepository {
 }
 
 type SubAccountListFilter struct {
-	CompanyID *int32
-	Search    string
-	Status    string
-	Page      int
-	Size      int
+	CompanyID  *int32
+	CompanyIDs []int32
+	Search     string
+	Status     string
+	Page       int
+	Size       int
 }
 
 func (r *SubAccountRepository) List(ctx context.Context, f SubAccountListFilter) ([]SubAccount, int, error) {
@@ -44,6 +45,11 @@ func (r *SubAccountRepository) List(ctx context.Context, f SubAccountListFilter)
 	if f.CompanyID != nil {
 		where = append(where, fmt.Sprintf("sa.company_id = $%d", argN))
 		args = append(args, *f.CompanyID)
+		argN++
+	}
+	if len(f.CompanyIDs) > 0 {
+		where = append(where, fmt.Sprintf("sa.company_id = ANY($%d)", argN))
+		args = append(args, f.CompanyIDs)
 		argN++
 	}
 	if f.Search != "" {

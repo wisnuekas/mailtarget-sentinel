@@ -85,13 +85,46 @@ func (h *SubAccountsHandler) List(c *fiber.Ctx) error {
 		return response.BadRequest(c, err.Error())
 	}
 
-	list, count, err := h.subAccounts.List(c.Context(), postgres.SubAccountListFilter{
+	filter := postgres.SubAccountListFilter{
 		CompanyID: companyFilter(c, h.cfg, h.store),
 		Search:    search,
 		Status:    status,
 		Page:      page,
 		Size:      size,
-	})
+	}
+
+	if c.Query("all") != "true" {
+		settings, err := h.store.GetSettings(c.Context())
+		if err != nil {
+			return response.InternalError(c, err.Error())
+		}
+		summary, err := h.events.GetAtRiskSummaryForCompany(
+			c.Context(), companyFilter(c, h.cfg, h.store), window,
+			settings.MinVolume,
+			settings.BounceRateThresholdPct,
+			settings.SpamRateThresholdPct,
+		)
+		if err != nil {
+			return response.InternalError(c, err.Error())
+		}
+		if len(summary) == 0 {
+			return response.OK(c, subAccountListResponse{
+				Page:        page,
+				Size:        size,
+				Count:       0,
+				Window:      windowStr,
+				SubAccounts: []subAccountRow{},
+			})
+		}
+		companyIDs := make([]int32, 0, len(summary))
+		for _, s := range summary {
+			companyIDs = append(companyIDs, s.CompanyID)
+		}
+		filter.CompanyID = nil
+		filter.CompanyIDs = companyIDs
+	}
+
+	list, count, err := h.subAccounts.List(c.Context(), filter)
 	if err != nil {
 		return response.InternalError(c, err.Error())
 	}

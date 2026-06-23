@@ -68,6 +68,19 @@ export interface DomainMetrics {
   is_blocked?: boolean
 }
 
+export interface SendingIPMetrics {
+  company_id: number
+  sending_ip: string
+  sent: number
+  delivered: number
+  bounced: number
+  spam_bounced: number
+  bounce_rate_pct: number
+  delivery_rate_pct: number
+  spam_rate_pct: number
+  company_name?: string
+}
+
 export interface CompanyRow {
   id: number
   name: string
@@ -132,6 +145,7 @@ export const api = {
       items: SubAccountMetrics[]
       summary: CompanyRiskSummary[]
       domains: DomainMetrics[]
+      sending_ips: SendingIPMetrics[]
     }>(`/companies/at-risk?window=${window}`),
 
   atRiskSummary: (window = '5m') =>
@@ -140,7 +154,7 @@ export const api = {
     ),
 
   companies: (params: Record<string, string> = {}) => {
-    const qs = new URLSearchParams({ include_risk: 'true', ...params }).toString()
+    const qs = new URLSearchParams(params).toString()
     return request<{
       page: number
       size: number

@@ -8,7 +8,7 @@ const REFRESH_MS = 30_000
 export function CompaniesPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [atRiskOnly, setAtRiskOnly] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const [window, setWindow] = useState('5m')
   const [rows, setRows] = useState<CompanyRow[]>([])
   const [count, setCount] = useState(0)
@@ -22,10 +22,9 @@ export function CompaniesPage() {
       page: String(page),
       size: String(PAGE_SIZE),
       window,
-      include_risk: 'true',
     }
     if (search) params.search = search
-    if (atRiskOnly) params.at_risk = 'true'
+    if (showAll) params.all = 'true'
 
     api.companies(params)
       .then((data) => {
@@ -34,7 +33,7 @@ export function CompaniesPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
-  }, [page, search, atRiskOnly, window])
+  }, [page, search, showAll, window])
 
   useEffect(() => { load() }, [load])
 
@@ -50,7 +49,7 @@ export function CompaniesPage() {
       <header className="page-header">
         <div>
           <h1>Companies</h1>
-          <p>Browse all companies from PostgreSQL with at-risk status from ClickHouse</p>
+          <p>Companies currently at risk from ClickHouse, enriched with PostgreSQL metadata</p>
         </div>
         <WindowSelect value={window} onChange={setWindow} />
       </header>
@@ -67,10 +66,10 @@ export function CompaniesPage() {
         <label className="checkbox-label">
           <input
             type="checkbox"
-            checked={atRiskOnly}
-            onChange={(e) => { setAtRiskOnly(e.target.checked); setPage(1) }}
+            checked={showAll}
+            onChange={(e) => { setShowAll(e.target.checked); setPage(1) }}
           />
-          At risk only
+          Show all companies
         </label>
       </div>
 

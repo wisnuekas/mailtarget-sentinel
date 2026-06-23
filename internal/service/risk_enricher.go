@@ -49,11 +49,17 @@ type AtRiskDomain struct {
 	IsBlocked   bool   `json:"is_blocked,omitempty"`
 }
 
+type AtRiskSendingIP struct {
+	chrepo.SendingIPMetrics
+	CompanyName string `json:"company_name,omitempty"`
+}
+
 type AtRiskPayload struct {
-	Window  string                 `json:"window"`
-	Items   []AtRiskSubAccount     `json:"items"`
-	Summary []AtRiskCompanySummary `json:"summary"`
-	Domains []AtRiskDomain         `json:"domains"`
+	Window      string                 `json:"window"`
+	Items       []AtRiskSubAccount     `json:"items"`
+	Summary     []AtRiskCompanySummary `json:"summary"`
+	Domains     []AtRiskDomain         `json:"domains"`
+	SendingIPs  []AtRiskSendingIP      `json:"sending_ips"`
 }
 
 func (e *RiskEnricher) BuildAtRisk(
@@ -93,6 +99,16 @@ func (e *RiskEnricher) BuildAtRisk(
 		return nil, err
 	}
 
+	sendingIPs, err := e.events.DetectAtRiskSendingIPs(
+		ctx, companyID, window,
+		settings.MinVolume,
+		settings.BounceRateThresholdPct,
+		settings.SpamRateThresholdPct,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	if items == nil {
 		items = []chrepo.SubAccountMetrics{}
 	}
@@ -102,9 +118,12 @@ func (e *RiskEnricher) BuildAtRisk(
 	if domains == nil {
 		domains = []chrepo.DomainMetrics{}
 	}
+	if sendingIPs == nil {
+		sendingIPs = []chrepo.SendingIPMetrics{}
+	}
 
 	subIDs := make([]int32, 0, len(items))
-	companyIDs := make([]int32, 0, len(summary))
+	companyIDs := make([]int32, 0, len(summary)+len(sendingIPs))
 	domainNames := make([]string, 0, len(domains))
 
 	for _, m := range items {
@@ -112,6 +131,9 @@ func (e *RiskEnricher) BuildAtRisk(
 	}
 	for _, s := range summary {
 		companyIDs = append(companyIDs, s.CompanyID)
+	}
+	for _, ip := range sendingIPs {
+		companyIDs = append(companyIDs, ip.CompanyID)
 	}
 	for _, d := range domains {
 		domainNames = append(domainNames, d.SendingDomain)
@@ -159,11 +181,21 @@ func (e *RiskEnricher) BuildAtRisk(
 		enrichedDomains = append(enrichedDomains, row)
 	}
 
+	enrichedSendingIPs := make([]AtRiskSendingIP, 0, len(sendingIPs))
+	for _, ip := range sendingIPs {
+		row := AtRiskSendingIP{SendingIPMetrics: ip}
+		if c, ok := compMap[ip.CompanyID]; ok {
+			row.CompanyName = c.Name
+		}
+		enrichedSendingIPs = append(enrichedSendingIPs, row)
+	}
+
 	return &AtRiskPayload{
-		Window:  windowLabel,
-		Items:   enrichedItems,
-		Summary: enrichedSummary,
-		Domains: enrichedDomains,
+		Window:     windowLabel,
+		Items:      enrichedItems,
+		Summary:    enrichedSummary,
+		Domains:    enrichedDomains,
+		SendingIPs: enrichedSendingIPs,
 	}, nil
 }
 

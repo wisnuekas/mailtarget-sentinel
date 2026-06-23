@@ -1,5 +1,5 @@
 import { statusColor, formatPct, formatDate, subAccountStatusColor } from '../api/sentinel'
-import type { Alert, SubAccountMetrics, CompanyRiskSummary, SubAccountRow, DomainMetrics, CompanyRow } from '../api/sentinel'
+import type { Alert, SubAccountMetrics, CompanyRiskSummary, SubAccountRow, DomainMetrics, CompanyRow, SendingIPMetrics } from '../api/sentinel'
 
 export function SubAccountActions({
   subAccountId,
@@ -229,6 +229,42 @@ export function DomainRiskTable({ domains }: { domains: DomainMetrics[] }) {
               <td className="num danger-text">{formatPct(d.bounce_rate_pct)}</td>
               <td className="num">{formatPct(d.spam_rate_pct)}</td>
               <td className="num">{formatPct(d.delivery_rate_pct)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export function SendingIPRiskTable({ sendingIPs }: { sendingIPs: SendingIPMetrics[] }) {
+  const rows = sendingIPs ?? []
+  if (rows.length === 0) {
+    return <p className="empty">No sending IPs currently at risk.</p>
+  }
+
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Sending IP</th>
+            <th>Sent</th>
+            <th>Bounce Rate</th>
+            <th>Spam Rate</th>
+            <th>Delivery</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((ip) => (
+            <tr key={`${ip.company_id}-${ip.sending_ip}`}>
+              <td>{ip.company_name || ip.company_id}</td>
+              <td><strong>{ip.sending_ip}</strong></td>
+              <td className="num">{ip.sent.toLocaleString()}</td>
+              <td className="num danger-text">{formatPct(ip.bounce_rate_pct)}</td>
+              <td className="num">{formatPct(ip.spam_rate_pct)}</td>
+              <td className="num">{formatPct(ip.delivery_rate_pct)}</td>
             </tr>
           ))}
         </tbody>

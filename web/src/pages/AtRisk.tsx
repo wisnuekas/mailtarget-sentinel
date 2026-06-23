@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type SubAccountMetrics, type CompanyRiskSummary, type DomainMetrics } from '../api/sentinel'
-import { AtRiskTable, CompanySummaryTable, DomainRiskTable, WindowSelect } from '../components/Tables'
+import { api, type SubAccountMetrics, type CompanyRiskSummary, type DomainMetrics, type SendingIPMetrics } from '../api/sentinel'
+import { AtRiskTable, CompanySummaryTable, DomainRiskTable, SendingIPRiskTable, WindowSelect } from '../components/Tables'
 
 const REFRESH_MS = 30_000
 
@@ -9,6 +9,7 @@ export function AtRiskPage() {
   const [items, setItems] = useState<SubAccountMetrics[]>([])
   const [summary, setSummary] = useState<CompanyRiskSummary[]>([])
   const [domains, setDomains] = useState<DomainMetrics[]>([])
+  const [sendingIPs, setSendingIPs] = useState<SendingIPMetrics[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionMsg, setActionMsg] = useState('')
@@ -22,6 +23,7 @@ export function AtRiskPage() {
         setItems(data.items ?? [])
         setSummary(data.summary ?? [])
         setDomains(data.domains ?? [])
+        setSendingIPs(data.sending_ips ?? [])
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
@@ -62,20 +64,20 @@ export function AtRiskPage() {
   const handleWarning = (id: number) =>
     runAction(id, 'Warning email', () => api.sendWarningEmail(id))
 
-  const isEmpty = !loading && !error && items.length === 0 && domains.length === 0
+  const isEmpty = !loading && !error && items.length === 0 && domains.length === 0 && sendingIPs.length === 0
 
   return (
     <div className="page">
       <header className="page-header">
         <div>
           <h1>At Risk</h1>
-          <p>Live sub-accounts and sending domains exceeding bounce/spam thresholds</p>
+          <p>Live sub-accounts, sending domains, and sending IPs exceeding bounce/spam thresholds</p>
         </div>
         <WindowSelect value={window} onChange={setWindow} />
       </header>
 
       {actionMsg && <p className="info-banner">{actionMsg}</p>}
-      {loading && items.length === 0 && domains.length === 0 && (
+      {loading && items.length === 0 && domains.length === 0 && sendingIPs.length === 0 && (
         <p className="loading">Scanning ClickHouse…</p>
       )}
       {error && <p className="error">{error}</p>}
@@ -92,6 +94,11 @@ export function AtRiskPage() {
           <section className="card">
             <h2>By Company ({summary.length})</h2>
             <CompanySummaryTable summary={summary} />
+          </section>
+
+          <section className="card">
+            <h2>At-Risk Sending IPs ({sendingIPs.length})</h2>
+            <SendingIPRiskTable sendingIPs={sendingIPs} />
           </section>
 
           <section className="card">

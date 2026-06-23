@@ -9,6 +9,7 @@ export function SubAccountsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [showAll, setShowAll] = useState(false)
   const [rows, setRows] = useState<SubAccountRow[]>([])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -26,6 +27,7 @@ export function SubAccountsPage() {
     }
     if (search) params.search = search
     if (statusFilter) params.status = statusFilter
+    if (showAll) params.all = 'true'
 
     api.subAccounts(params)
       .then((data) => {
@@ -34,7 +36,7 @@ export function SubAccountsPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
-  }, [page, search, statusFilter])
+  }, [page, search, statusFilter, showAll])
 
   useEffect(() => { load() }, [load])
 
@@ -83,7 +85,7 @@ export function SubAccountsPage() {
         <div>
           <h1>Sub-accounts</h1>
           <p>
-            Live list from PostgreSQL with ClickHouse metrics (super-user dashboard)
+            Sub-accounts from at-risk companies (ClickHouse), enriched from PostgreSQL
           </p>
         </div>
       </header>
@@ -110,6 +112,14 @@ export function SubAccountsPage() {
           <option value="Suspended">Suspended</option>
           <option value="Terminated">Terminated</option>
         </select>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={showAll}
+            onChange={(e) => { setShowAll(e.target.checked); setPage(1) }}
+          />
+          Show all companies
+        </label>
       </div>
 
       <section className="card">
