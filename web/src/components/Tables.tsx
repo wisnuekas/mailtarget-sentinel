@@ -28,7 +28,7 @@ export function SubAccountActions({
           className="btn-killswitch"
           disabled={isBusy}
           onClick={() => onKillSwitch(subAccountId)}
-          title="Resend anomaly alert email with kill-switch link"
+          title="Resend anomaly alert with kill-switch link"
         >
           Kill Switch
         </button>
@@ -38,7 +38,7 @@ export function SubAccountActions({
           className="btn-warning"
           disabled={isBusy}
           onClick={() => onWarning(subAccountId)}
-          title="Send warning email via Transmission API"
+          title="Send warning email"
         >
           Warning
         </button>
@@ -48,7 +48,7 @@ export function SubAccountActions({
           className="btn-danger"
           disabled={isBusy}
           onClick={() => onSuspend(subAccountId)}
-          title="Suspend via PostgreSQL UPDATE sub_account.status"
+          title="Suspend sub-account"
         >
           Suspend
         </button>
@@ -58,7 +58,7 @@ export function SubAccountActions({
           className="btn-success"
           disabled={isBusy}
           onClick={() => onResume(subAccountId)}
-          title="Resume via PostgreSQL UPDATE sub_account.status"
+          title="Resume sub-account"
         >
           Resume
         </button>
@@ -343,7 +343,7 @@ export function AtRiskTable({
 export function CompanySummaryTable({ summary }: { summary: CompanyRiskSummary[] }) {
   const rows = summary ?? []
   if (rows.length === 0) {
-    return <p className="empty">All companies look healthy.</p>
+    return <p className="empty">No companies at risk.</p>
   }
 
   return (

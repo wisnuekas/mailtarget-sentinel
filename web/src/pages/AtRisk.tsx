@@ -71,22 +71,19 @@ export function AtRiskPage() {
       <header className="page-header">
         <div>
           <h1>At Risk</h1>
-          <p>Live sub-accounts, sending domains, and sending IPs exceeding bounce/spam thresholds</p>
+          <p>Companies, sub-accounts, domains, and sending IPs exceeding thresholds</p>
         </div>
         <WindowSelect value={window} onChange={setWindow} />
       </header>
 
       {actionMsg && <p className="info-banner">{actionMsg}</p>}
       {loading && items.length === 0 && domains.length === 0 && sendingIPs.length === 0 && (
-        <p className="loading">Scanning ClickHouse…</p>
+        <p className="loading">Loading…</p>
       )}
       {error && <p className="error">{error}</p>}
 
       {isEmpty && (
-        <p className="info-banner">
-          No at-risk data in the last {window}. Seed dev events:{' '}
-          <code>make clickhouse-seed-287</code> then refresh (data expires after ~5 minutes).
-        </p>
+        <p className="info-banner">No at-risk activity in the last {window}.</p>
       )}
 
       {!error && (

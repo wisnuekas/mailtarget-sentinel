@@ -61,9 +61,7 @@ export function OverviewPage() {
       </div>
 
       {activeRisk === 0 && (
-        <p className="info-banner">
-          No companies at risk. Run <code>make clickhouse-seed-287</code> for test data (expires in ~5 min).
-        </p>
+        <p className="info-banner">No companies at risk in the last 5 minutes.</p>
       )}
 
       {chartData.length > 0 && (

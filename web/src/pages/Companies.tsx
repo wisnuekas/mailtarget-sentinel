@@ -49,7 +49,7 @@ export function CompaniesPage() {
       <header className="page-header">
         <div>
           <h1>Companies</h1>
-          <p>Companies currently at risk from ClickHouse, enriched with PostgreSQL metadata</p>
+          <p>Companies with active bounce or spam anomalies</p>
         </div>
         <WindowSelect value={window} onChange={setWindow} />
       </header>

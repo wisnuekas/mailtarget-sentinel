@@ -84,9 +84,7 @@ export function SubAccountsPage() {
       <header className="page-header">
         <div>
           <h1>Sub-accounts</h1>
-          <p>
-            Sub-accounts from at-risk companies (ClickHouse), enriched from PostgreSQL
-          </p>
+          <p>Sub-accounts belonging to companies currently at risk</p>
         </div>
       </header>
 
@@ -147,15 +145,6 @@ export function SubAccountsPage() {
             </button>
           </div>
         )}
-      </section>
-
-      <section className="card">
-        <h2>API actions</h2>
-        <ul className="api-hints">
-          <li><strong>Suspend / Resume</strong> — PostgreSQL <code>UPDATE sub_account.status</code> via <code>POST /manual-override</code></li>
-          <li><strong>Warning email</strong> — <code>POST /layang/transmissions</code> via Sentinel <code>POST /sub-accounts/warning-email</code></li>
-          <li><strong>Kill switch email</strong> — resend anomaly alert via <code>POST /sub-accounts/kill-switch-email</code></li>
-        </ul>
       </section>
     </div>
   )

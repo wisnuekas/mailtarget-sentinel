@@ -35,7 +35,7 @@ export function HistoryPage() {
       <header className="page-header">
         <div>
           <h1>Alert History</h1>
-          <p>Persistent log from SQLite — {total} total alerts</p>
+          <p>Alert activity and status history</p>
         </div>
       </header>
 

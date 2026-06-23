@@ -78,21 +78,10 @@ func (d *Detector) Run(parent context.Context) {
 
 	cooldown := time.Duration(settings.AlertCooldownMinutes) * time.Minute
 	if len(anomalies) > 0 {
-		d.logger.Info("worker: anomalies detected", "count", len(anomalies))
+		d.logger.Info("worker: sub-account anomalies detected", "count", len(anomalies))
 		for _, m := range anomalies {
 			d.processAnomaly(ctx, m, cooldown)
 		}
-	} else {
-		companyScope := "all"
-		if id := d.companyFilter(ctx); id != nil {
-			companyScope = fmt.Sprintf("%d", *id)
-		}
-		d.logger.Info("worker: no sub-account anomalies detected",
-			"company_scope", companyScope,
-			"window", detectionWindow.String(),
-			"min_volume", settings.MinVolume,
-			"bounce_threshold_pct", settings.BounceRateThresholdPct,
-		)
 	}
 
 	sendingIPs, err := d.events.DetectAtRiskSendingIPs(
@@ -109,9 +98,9 @@ func (d *Detector) Run(parent context.Context) {
 	}
 	if len(sendingIPs) > 0 {
 		d.logger.Info("worker: at-risk sending IPs detected", "count", len(sendingIPs))
-	}
-	for _, ip := range sendingIPs {
-		d.processSendingIPAnomaly(ctx, ip, cooldown)
+		for _, ip := range sendingIPs {
+			d.processSendingIPAnomaly(ctx, ip, cooldown)
+		}
 	}
 }
 
@@ -150,7 +139,7 @@ func (d *Detector) processAnomaly(ctx context.Context, m chrepo.SubAccountMetric
 		return
 	}
 	if !acquired {
-		d.logger.Info("worker: alert email deduplicated", "sub_account_id", m.SubAccountID)
+		d.logger.Debug("worker: alert email deduplicated", "sub_account_id", m.SubAccountID)
 		return
 	}
 
@@ -220,7 +209,7 @@ func (d *Detector) processSendingIPAnomaly(ctx context.Context, m chrepo.Sending
 		return
 	}
 	if !acquired {
-		d.logger.Info("worker: sending IP alert deduplicated",
+		d.logger.Debug("worker: sending IP alert deduplicated",
 			"company_id", m.CompanyID,
 			"sending_ip", m.SendingIP,
 		)

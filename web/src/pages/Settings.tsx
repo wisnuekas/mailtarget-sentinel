@@ -33,7 +33,7 @@ export function SettingsPage() {
       const updated = await api.updateSettings(payload)
       setSettings(updated)
       setForm(updated)
-      setMsg('Settings saved to Redis')
+      setMsg('Settings saved')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed')
     }
@@ -46,7 +46,7 @@ export function SettingsPage() {
       <header className="page-header">
         <div>
           <h1>Settings</h1>
-          <p>Dynamic thresholds and company scope (stored in Redis)</p>
+          <p>Detection thresholds and company scope</p>
         </div>
       </header>
 
@@ -64,7 +64,7 @@ export function SettingsPage() {
             onChange={(e) => setForm({ ...form, company_id: Number(e.target.value) || 0 })}
           />
           <small className="field-hint">
-            Default 287. Set to 0 for all companies (super-user).
+            Use 0 to monitor all companies.
           </small>
         </label>
         <label>

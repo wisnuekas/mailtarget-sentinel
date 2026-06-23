@@ -87,7 +87,6 @@ func main() {
 	defer c.Stop()
 
 	go func() {
-		slog.Info("worker: initial detection run")
 		detector.Run(ctx)
 	}()
 
@@ -147,16 +146,16 @@ func main() {
 	})
 
 	go func() {
-		slog.Info("server starting", "port", cfg.AppPort, "sqlite", cfg.SQLitePath)
+		slog.Info("server listening", "port", cfg.AppPort)
 		if err := app.Listen(":" + cfg.AppPort); err != nil {
 			slog.Error("server failed", "error", err)
 			os.Exit(1)
 		}
 	}()
 
-	slog.Info("worker scheduled",
-		"interval", "every 5 minutes",
+	slog.Info("sentinel started",
 		"company_scope", companyScopeLabel(cfg.CompanyID),
+		"worker_interval", "5m",
 	)
 	<-ctx.Done()
 	slog.Info("shutting down")
