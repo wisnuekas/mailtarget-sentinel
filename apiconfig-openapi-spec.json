@@ -1,0 +1,2724 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Mailtarget Dashboard API",
+    "description": "At the core of Mailtarget's services lie our powerful APIs, designed to give developers around the globe an easy and efficient means to manage email communications. Whether you need to send, receive, or track emails, our APIs provide the tools you need to integrate seamlessly into your applications. To acquaint you with the capabilities of Mailtarget's APIs, here are essential insights to guide you:\n\n## Endpoint\n\nThe Mailtarget API adheres to REST principles, ensuring a consistent and predictable interface. Authenticated users can engage with our various URIs using the designated HTTP request methods. To guarantee security, all requests must be made over HTTPS, enforcing TLS encryption throughout.\n\n`https://apiconfig.mailtarget.co/v1`\n\nIf you have an Enterprise account with a dedicated endpoint, please reach out to your account manager for further details.\n\n## Authentication\n\nAll API requests must be authenticated using a **Mailtarget API Key**.\n\nInclude your API key in the `Authorization` request header using the **Bearer** scheme:\n\n```curl\nAuthorization: Bearer YOUR_API_KEY\n```\n\n**Example request:**\n\n```curl\ncurl --location --request GET 'https://apiconfig.mailtarget.co/v1/account' \\\n--header 'Authorization: Bearer YOUR_API_KEY'\n```\n\n> **Security note:** Keep your API keys in a secure location and never expose them in client-side code. If your key is compromised, regenerate it immediately from the [Mailtarget dashboard](https://docs.mtarget.co/en/articles/10382870-api-key).\n\n### API Conventions\n\n* Trailing slashes are ignored: `/account` is equivalent to `/account/`.\n* URL paths, query parameter names, and JSON field names are **case sensitive**.\n* URL paths use **lowercase with dashes** separating words.\n* Query parameters and JSON fields use **camelCase**.\n* HTTP status codes indicate success or failure; additional details are returned in the response body.\n* All APIs return standard HTTP error code formats.\n* Unexpected query parameters and request body fields are ignored.\n* Our JSON number type is bounded to a signed 32-bit integer.\n\n## Errors\n\nWhen making an API call, it is possible to receive an error message in response. This error message can indicate either an issue with your request or a problem that occurred on our side. Errors are accompanied by an error code and JSON data that provides a more specific message, description, and API code.\n\n```json\n422 Unprocessable Entity\n{\n  \"errors\": [\n    {\n      \"message\": \"required field is missing\",\n      \"description\": \"content object or template_id required\",\n      \"code\": \"1400\"\n    }\n  ]\n}\n```\n\n### Error table\n\n| **CODE** | **STATUS NAME**          | **DESCRIPTION**                                                                | **SUGGESTED ACTION**                                                                                                                                     |\n| -------- | ------------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |\n| 400      | Bad Request              | There is a problem with your request.                                          | Check your request follows the API documentation and uses correct syntax.                                                                                |\n| 401      | Unauthorized             | You don't have the needed authorization to make the request.                   | Make sure you are using a valid API key with the necessary permissions for your request.                                                                 |\n| 403      | Forbidden                | The server understood the request but refused to fulfill it.                   | See if your Mailtarget plan includes the resource you are requesting and your API key has the necessary permissions.                                     |\n| 404      | Not Found                | The server couldn't find the requested file.                                   | Change your request URL to match a valid API endpoint.                                                                                                   |\n| 405      | Method Not Allowed       | The resource does not have the specified method. (e.g. PUT on transmissions)   | Change the method to follow the documentation for the resource.                                                                                          |\n| 409      | Conflict                 | A conflict arose from your request. (e.g. user already exists with that email) | Modify the payload to clear the conflict.                                                                                                                |\n| 413      | Request Entity Too Large | The size of the request exceeds the limit.                                     | Check the documented limit for the API and reduce the size of the request.                                                                               |\n| 415      | Unsupported Media Type   | The request is not in a supported format.                                      | Check that your Content-Type header is a supported type and that your request adheres to the documentation.                                              |\n| 420      | Exceed Sending Limit     | You exceeded your daily, monthly, or sandbox sending limit.                    | Check that you are within the limits of your Mailtarget plan. If you are using the sandbox domain, then you'll need to add a sending domain to continue. |\n| 422      | Unprocessable Entity     | The request was syntactically correct but failed due to semantic errors.       | Make sure that your request includes all of the required fields and your data is valid.                                                                  |\n| 429      | Too Many Requests        | You sent too many requests in a given time period.                             | Wait 1 to 5 seconds before making another request. Heavier usage patterns may require a more sophisticated and incremental backoff strategy.             |\n| 500      | Internal Server Error    | Something went wrong on our end.                                               | Try the request again later. If the error does not resolve, check for service updates. You can also contact Support if your issue persists.              |\n| 503      | Service Unavailable      | We are experiencing higher than normal levels of traffic.                      | Try the request again later.                                                                                                                             |\n\n### Environment Setup\n\nOur collection is configured to utilize two Postman variables:\n\n* **API_KEY**: Used for authenticating requests. Assign it a valid API key.\n* **BASE_URL**: Set as `https://apiconfig.mailtarget.co/v1`.\n",
+    "termsOfService": "https://mailtarget.co/term",
+    "contact": {
+      "name": "Mailtarget API Support",
+      "url": "https://mailtarget.co/contact-us",
+      "email": "support@mailtarget.co"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://apiconfig.mailtarget.co/v1"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Endpoints for retrieving account information and email sending usage quota. Use these endpoints to verify account configuration, monitor sending volume, and enforce quota limits before initiating sends."
+    },
+    {
+      "name": "Suppression",
+      "description": "Endpoints for managing the suppression list — email addresses that should not receive emails due to bounces, spam complaints, or unsubscribe requests. Use these endpoints to protect sender reputation and comply with suppression policies."
+    },
+    {
+      "name": "Sending Domains",
+      "description": "The **Sending Domains API** allows users to manage their sending domains to ensure proper email authentication and deliverability. The API provides functionalities for **creating, retrieving, deleting, and verifying** sending domains.\n\n## Core Functions\n\n1. **Create Sending Domain** – Register a new sending domain.\n2. **Get List of Sending Domains** – Retrieve all registered sending domains with pagination.\n3. **Delete Sending Domain** – Remove a sending domain from the system.\n4. **Verify Sending Domain** – Check and confirm if a sending domain has been authenticated via DNS records.\n\nBy integrating this API, users can automate domain registration, verification, and management for email-sending purposes.\n\n## Limitation\n\n* **Rate Limits:** API calls are limited to **X requests per minute** to prevent abuse.\n* **Authentication Required:** All API requests must include a valid **API key** or **OAuth token**.\n* **Domain Verification Process:** Newly added domains remain in a **pending state** until users complete DNS authentication.\n* **SPF & DKIM Requirements:** Sending domains must have valid **SPF and DKIM** records configured before they can be used.\n* **Deletion Restriction:** A sending domain **cannot be deleted** if it is actively being used in ongoing email campaigns.\n\n## Use Case\n\n* **Automated Domain Registration & Verification:** Users can register a sending domain and retrieve the necessary authentication records (SPF & DKIM) for DNS configuration.\n* **Domain Status Monitoring:** Businesses can track the verification status of their sending domains and ensure compliance with authentication standards.\n* **Programmatic Cleanup of Inactive Domains:** Unused or unverified domains can be automatically removed from the system to maintain a clean and secure email environment.\n* **Security & Compliance:** The verification process helps enforce proper email authentication, reducing the risk of email spoofing and phishing attacks."
+    },
+    {
+      "name": "API Keys",
+      "description": "The API Key API allows users to manage their API keys, including creating, retrieving, updating, and deleting keys. This API is essential for authentication and authorization of external integrations with the platform.\n\n## Limitation\n\n* API keys must be kept confidential and should not be shared or exposed.\n* Some API key permissions may be restricted based on user roles and account type.\n* Deleting an API key immediately revokes access for any service using it.\n\n## Use Case\n\n1. **Integration Authentication** – A developer generates an API key to authenticate a third-party system with the platform.\n2. **Security Management** – An admin retrieves a list of API keys to audit and revoke unused keys.\n3. **Key Rotation** – A user updates an existing API key to maintain security without disrupting existing integrations."
+    },
+    {
+      "name": "Sub Accounts"
+    },
+    {
+      "name": "Templates",
+      "description": "The Template API allows users to create and retrieve all email templates via API. This enables seamless integration with email automation systems by storing and managing reusable templates.\n\nUsers can send emails through the API or SMTP by utilizing a template ID along with specific content parameters or shortcodes. This approach eliminates the need to send complete string or HTML formats during email transmission, allowing for more efficient and streamlined email sending processes.\n\n### Example Workflow:\n\n1. **Create a Template:** Define a template and assign it a unique template ID.\n2. **Prepare Content Parameters:** Determine the shortcodes and parameters needed by the template, such as `{name}`, `{date}`, `{company}`, etc.\n3. **Send Email via API:**\n   * Specify the template ID when preparing the email transmission.\n   * Include only the necessary content parameters relevant to the particular sending instance.\n\n### Key Features\n\n* **Template ID:** Use the template ID to identify which template to use for the email message. This ID corresponds to a template stored and managed within your system.\n* **Content Parameters/Shortcodes:** Define content or shortcodes that are used within the template. These parameters are placeholders in the template that will be dynamically replaced with real data at the time of sending.\n\n## Limitation\n\n* The maximum number of templates a user can create may be subject to account-level restrictions.\n* Templates must adhere to the supported email format and size limits.\n* Some template attributes may be required for proper rendering in email clients.\n\n## Use Case\n\n1. **Email Automation** – A user wants to create predefined email templates to send transactional emails programmatically.\n2. **Template Management** – A system fetches all available templates to display in a user interface for selection.\n"
+    },
+    {
+      "name": "Analytics",
+      "description": "Endpoints for retrieving email transmission analytics, delivery status, event lists, and aggregated performance summaries. Use these endpoints to monitor sending activity, track transmission results, and analyze email delivery performance."
+    }
+  ],
+  "paths": {
+    "/analytic/summary": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Analytics Summary",
+        "description": "Provides **aggregated analytics data** for email sending activity within a specified date range.\n\nThis endpoint summarizes delivery and engagement performance metrics to help developers\nand system administrators **monitor overall email performance**.\n\n**Use cases:**\n- Build custom analytics dashboards\n- Monitor sending performance\n- Detect anomalies such as spikes in bounce or complaint rates\n- Optimize email sending strategies",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start date for analytics reporting (YYYY-MM-DD)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End date for analytics reporting (YYYY-MM-DD)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sandbox",
+            "in": "query",
+            "description": "Enable sandbox mode to retrieve sandbox data",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sandboxSubAccountId",
+            "in": "query",
+            "description": "Sub-account ID for sandbox filtering",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated email delivery and engagement metrics for the specified period",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.AnalyticsSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid date format or range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-public": true
+      }
+    },
+    "/analytic/summary/breakdown": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Analytics Summary Breakdown",
+        "description": "Returns **aggregated analytics data broken down by a specific dimension** within a date range.\n\nSupported groupBy dimensions: `DAY`, `SENDING_DOMAIN`, `RECIPIENT_DOMAIN`, `SUBACCOUNT_ID`, `IP_POOL`, `LABEL`.\nEach result entry includes the same delivery and engagement metrics as the summary endpoint,\nplus a `name` field representing the value of the grouped dimension.\n\n**Use cases:**\n- Analyze performance per sending domain or IP pool\n- Compare engagement metrics across sub-accounts\n- Identify day-by-day trends in delivery or bounce rates",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start date for analytics reporting (YYYY-MM-DD)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End date for analytics reporting (YYYY-MM-DD)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "description": "Dimension to group results by",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DAY",
+                "SENDING_DOMAIN",
+                "RECIPIENT_DOMAIN",
+                "SUBACCOUNT_ID",
+                "IP_POOL",
+                "LABEL"
+              ]
+            }
+          },
+          {
+            "name": "sandbox",
+            "in": "query",
+            "description": "Enable sandbox mode to retrieve sandbox data",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sandboxSubAccountId",
+            "in": "query",
+            "description": "Sub-account ID for sandbox filtering",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of analytics summaries grouped by the specified dimension",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/model.AnalyticsSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid date format, range, or groupBy value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-public": true
+      }
+    },
+    "/analytic/transmission/{id}": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Email Transmission Status",
+        "description": "Returns the **status and statistics of a specific email transmission** identified by its transmissionId.\n\nA transmission represents a sending request that may contain one or more recipients.\nThis endpoint provides delivery results and engagement metrics (delivered, opened, clicked, bounced, unsubscribed)\nassociated with that transmission.\n\n**Use cases:**\n- Tracking delivery performance of a sent email\n- Monitoring transactional email status\n- Building internal reporting tools\n- Verifying if a message was successfully delivered",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier of the email transmission",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transmission status and engagement statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.DetailTransmissionData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-public": true
+      }
+    },
+    "/analytic/transmission/{id}/events": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get List Transmission Events",
+        "description": "Returns a **list of events related to a specific transmissionId**.\n\nEvents may include email injection, delivery, opens, link clicks, bounces, or other interaction events.\nThis endpoint is particularly useful when applications cannot receive webhook notifications\nand need to **poll for event updates**.\n\n**Use cases:**\n- Pulling delivery and engagement events\n- Building custom analytics dashboards\n- Debugging email delivery or engagement issues",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Unique identifier of the email transmission",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transmission events (injection, delivery, open, click, bounce)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.TransmissionEventResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-public": true
+      }
+    },
+    "/account": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get Account Information",
+        "description": "Returns **basic metadata about the authenticated account**, including company details, account status, and default configuration.\n\nThis endpoint can be used to **verify the account configuration** before sending emails.\n\n**Use cases:**\n- Verify account status before initiating a send\n- Display account details in dashboards\n- Confirm default sending domain configuration\n- Retrieve timezone settings for analytics alignment",
+        "responses": {
+          "200": {
+            "description": "Account information including company details, plan, status, default sending domain, and timezone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetAccountInfoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-public": true
+      }
+    },
+    "/account/usage-quota": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get Account Usage & Quota",
+        "description": "Returns a summary of the **email sending usage, sending limits, and operational constraints** configured for the account.\n\nThis endpoint provides insights into how many emails have been sent, how much quota remains, percentage of quota used, rate limits, and maximum transmission constraints.\n\nThis endpoint is useful for applications that need to **monitor sending activity and prevent exceeding the quota**.\n\n**Use cases:**\n- Monitor email sending volume\n- Prevent sending when the account quota is close to being exceeded\n- Automatically throttle sending applications when limits are approaching\n- Split large sending jobs into smaller batches to comply with rate limits\n- Prevent sending requests that exceed the maximum recipients per transmission",
+        "responses": {
+          "200": {
+            "description": "Account usage statistics including emails sent, quota remaining, rate limits, and transmission constraints",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetUsageQuotaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-public": true
+      }
+    },
+    "/api-key": {
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Get all API Keys",
+        "description": "Retrieves all API keys associated with a user's account.\nAPI keys are essential for authenticating and authorizing API requests,\nthis endpoint allows users to view active keys and their permissions.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Size",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subAccountId",
+            "in": "query",
+            "description": "Sub account ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "permissionType",
+            "in": "query",
+            "description": "Permission type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.ListApiKeysDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      },
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Create API key",
+        "description": "Creates a new API key that can be used for authentication when interacting with the SMTP or API.\nUsers can generate multiple API keys for different integrations,\nenabling better security and management of access control.",
+        "requestBody": {
+          "description": "API key data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/model.CreateApiKeyForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetAPIKeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true,
+        "x-codegen-request-body-name": "request"
+      }
+    },
+    "/api-key/{id}": {
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Get Detail API Key",
+        "description": "Fetches details of a specific API key based on its unique identifier.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "API key ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetAPIKeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      },
+      "put": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Update API key",
+        "description": "Updates the details of an existing API key, including modifying its permissions or extending its validity.\nThis endpoint is useful for maintaining security while ensuring uninterrupted access to API integrations.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "API key ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "API key data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/model.UpdateApiKeyForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetAPIKeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true,
+        "x-codegen-request-body-name": "request"
+      },
+      "delete": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Delete API key",
+        "description": "Removes an API key, revoking access for any applications or services using it.\nDeleting unused or compromised API keys helps prevent unauthorized access and enhances security.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "API key ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      }
+    },
+    "/domain/sending": {
+      "get": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Get All Sending Domains",
+        "description": "Retrieves a paginated list of registered sending domains.\nThis endpoint allows users to fetch all sending domains associated with their account,\nincluding details such as domain name, verification status, and authentication settings.\nPagination ensures efficient data retrieval when managing a large number of domains.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Pagination page, start from 1 until n length of pages",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Maximum number of data to return per page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search keyword",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Domain status, 'Blocked', 'Verified or 'Unverified'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/model.DtoDomains"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      },
+      "post": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Create Sending Domain",
+        "description": "Registers a new sending domain and returns authentication details.\nWhen adding a new sending domain, users receive necessary DNS records (SPF, DKIM, and DMARC) that must be configured to authenticate emails.\nProper configuration of these records improves email deliverability and ensures compliance with email authentication standards.",
+        "requestBody": {
+          "description": "Sending domain data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/model.NewDomainForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.SendingBounceDetailDomain"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true,
+        "x-codegen-request-body-name": "request"
+      }
+    },
+    "/domain/sending/unverified-spf": {
+      "get": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Get Unverified SPF",
+        "description": "Fetches a list of sending domains that have incomplete or missing SPF authentication.\nThis endpoint helps users identify domains that require SPF record updates to prevent email spoofing and improve sender reputation.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.Counter-model_SimpleDomain"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      }
+    },
+    "/domain/sending/{id}": {
+      "get": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Get Sending Domain by ID",
+        "description": "Retrieves details of a specific sending domain based on its unique identifier\nUsers can check the domain's verification status, authentication records,\nand configuration settings to ensure proper email delivery setup.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Domain ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.SendingBounceDetailDomain"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      },
+      "delete": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Delete Sending Domain",
+        "description": "Removes a sending domain from the system\nOnce deleted, the domain can no longer be used for sending emails,\nand its associated authentication records become invalid.\nThis action is irreversible, so users should confirm before proceeding.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Domain ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      }
+    },
+    "/domain/sending/{id}/share": {
+      "put": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Share Sending Domain",
+        "description": "Enables sharing of a sending domain with other users or teams within the same platform.\nThis functionality is useful for organizations that manage multiple accounts\nand need to grant controlled access to a verified domain.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Domain ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.SendingBounceDetailDomain"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      }
+    },
+    "/domain/sending/{id}/spf-suggestion": {
+      "get": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Get SPF Suggestion",
+        "description": "Provides SPF record recommendations for a specific sending domain.\nThis helps users correctly configure their SPF records to authorize email senders\nand avoid deliverability issues due to authentication failures.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Domain ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.SuggestionData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      }
+    },
+    "/domain/sending/{id}/verify-txt": {
+      "put": {
+        "tags": [
+          "Sending Domains"
+        ],
+        "summary": "Verify TXT Domain",
+        "description": "Checks whether the TXT records required for domain authentication\nhave been correctly set up in the domain's DNS.\nThis verification process ensures that the domain is properly authenticated for sending emails.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Domain ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/model.SendingBounceDetailDomain"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      }
+    },
+    "/permission": {
+      "get": {
+        "tags": [
+          "Permissions"
+        ],
+        "summary": "Get all permissions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/model.Permission"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      }
+    },
+    "/sub-account": {
+      "get": {
+        "tags": [
+          "Sub Accounts"
+        ],
+        "summary": "Get Sub Account",
+        "description": "Retrieves all Sub Accounts associated with a user's account.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Size",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search",
+            "schema": {
+              "type": "string",
+              "default": "\"\""
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status",
+            "schema": {
+              "type": "string",
+              "default": "\"\""
+            }
+          },
+          {
+            "name": "hasApiKey",
+            "in": "query",
+            "description": "Has API Key",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.SubAccountList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      },
+      "post": {
+        "tags": [
+          "Sub Accounts"
+        ],
+        "summary": "Create Sub Account",
+        "description": "Creates a new Sub Account associated with a user's account.",
+        "requestBody": {
+          "description": "Create Sub Account Form",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/model.CreateSubAccountForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetSubAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true,
+        "x-codegen-request-body-name": "CreateSubAccountForm"
+      }
+    },
+    "/sub-account/{id}": {
+      "get": {
+        "tags": [
+          "Sub Accounts"
+        ],
+        "summary": "Get Sub Account",
+        "description": "Retrieves a specific Sub Account associated with a user's account.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Sub Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetSubAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      },
+      "put": {
+        "tags": [
+          "Sub Accounts"
+        ],
+        "summary": "Update Sub Account",
+        "description": "Updates a specific Sub Account associated with a user's account.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Sub Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Update Sub Account Form",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/model.UpdateSubAccountForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.GetSubAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true,
+        "x-codegen-request-body-name": "UpdateSubAccountForm"
+      }
+    },
+    "/suppression/list": {
+      "get": {
+        "tags": [
+          "Suppression"
+        ],
+        "summary": "Get Suppression List",
+        "description": "Retrieves a list of **suppressed email addresses** that should not receive emails due to delivery failures, spam complaints, or unsubscribe requests.\n\nSuppression lists help **protect sender reputation** by preventing emails from being sent to problematic addresses.\n\nSuppression types include:\n- `bounce` — Address that previously hard bounced\n- `spam_complaint` — Recipient marked the email as spam\n- `unsubscribe` — Recipient requested to unsubscribe",
+        "responses": {
+          "200": {
+            "description": "Suppression list with total count and list of suppressed email entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.CounterGeneric-model_OpenAPISuppressionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-public": true
+      }
+    },
+    "/template": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Get All Templates",
+        "description": "Retrieves all email templates created by the user.\nTemplates help streamline email campaigns by allowing users to store\nand reuse pre-designed email content, ensuring consistency in branding and messaging.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Pagination page, start from 1 until n length of pages",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Maximum number of data to return per page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search keyword on data in templates",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.Counter-model_TemplateData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true
+      },
+      "post": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Create Template",
+        "description": "Create a new email template that can be used in transactional messages.",
+        "requestBody": {
+          "description": "Template data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/model.TemplateForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.Response"
+                }
+              }
+            }
+          }
+        },
+        "x-public": true,
+        "x-codegen-request-body-name": "request"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "model.AnalyticsSummary": {
+        "type": "object",
+        "properties": {
+          "bounceRate": {
+            "type": "number"
+          },
+          "bounced": {
+            "type": "integer"
+          },
+          "clickRate": {
+            "type": "number"
+          },
+          "clicked": {
+            "type": "integer"
+          },
+          "delivered": {
+            "type": "integer"
+          },
+          "deliveryRate": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string",
+            "description": "populated when groupBy=$field/day"
+          },
+          "openRate": {
+            "type": "number"
+          },
+          "opened": {
+            "type": "integer"
+          },
+          "period": {
+            "$ref": "#/components/schemas/model.AnalyticsSummaryPeriod"
+          },
+          "sent": {
+            "type": "integer"
+          },
+          "unsubscribeRate": {
+            "type": "number"
+          },
+          "unsubscribed": {
+            "type": "integer"
+          }
+        }
+      },
+      "model.AnalyticsSummaryPeriod": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      },
+      "model.DetailTransmissionData": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "integer"
+          },
+          "from": {
+            "$ref": "#/components/schemas/model.TransmissionFrom"
+          },
+          "recipientCount": {
+            "type": "integer"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/model.TransmissionStats"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "transmissionId": {
+            "type": "string"
+          }
+        }
+      },
+      "model.TransmissionEvent": {
+        "type": "object",
+        "properties": {
+          "friendlyFrom": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "recipient": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": "string"
+          }
+        }
+      },
+      "model.TransmissionEventResponse": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.TransmissionEvent"
+            }
+          }
+        }
+      },
+      "model.TransmissionFrom": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "model.TransmissionStats": {
+        "type": "object",
+        "properties": {
+          "bounced": {
+            "type": "integer"
+          },
+          "clicked": {
+            "type": "integer"
+          },
+          "delivered": {
+            "type": "integer"
+          },
+          "opened": {
+            "type": "integer"
+          },
+          "unsubscribed": {
+            "type": "integer"
+          }
+        }
+      },
+      "response.Response": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "model.AccountRateLimit": {
+        "type": "object",
+        "properties": {
+          "requestsPerMinute": {
+            "type": "integer"
+          },
+          "requestsPerSecond": {
+            "type": "integer"
+          }
+        }
+      },
+      "model.Counter-model_SimpleDomain": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.SimpleDomain"
+            }
+          }
+        }
+      },
+      "model.Counter-model_TemplateData": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.TemplateData"
+            }
+          }
+        }
+      },
+      "model.CreateApiKeyForm": {
+        "type": "object",
+        "properties": {
+          "allowedIp": {
+            "type": "string",
+            "description": "List ip separated by comma",
+            "example": "123.123.123.123,"
+          },
+          "name": {
+            "type": "string",
+            "description": "Description to define API Key"
+          },
+          "permissionIds": {
+            "type": "array",
+            "description": "Array of permission id",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "model.CreateSubAccountForm": {
+        "type": "object",
+        "properties": {
+          "allowedIps": {
+            "type": "string",
+            "example": "123.123.123.123,"
+          },
+          "apiKeyName": {
+            "type": "string"
+          },
+          "createApiKey": {
+            "type": "boolean"
+          },
+          "ipPoolId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissionIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "permissionType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "model.DtoDomains": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "sendingDomain": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.SendingDomain"
+            }
+          }
+        }
+      },
+      "model.GetAPIKeyResponse": {
+        "type": "object",
+        "properties": {
+          "allowedIp": {
+            "type": "string"
+          },
+          "companyId": {
+            "type": "integer"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissionType": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.Permission"
+            }
+          },
+          "subAccountId": {
+            "type": "integer"
+          },
+          "subAccountName": {
+            "type": "string"
+          }
+        }
+      },
+      "model.GetAccountInfoResponse": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "defaultSendingDomain": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        }
+      },
+      "model.GetAllApiKeysData": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissionType": {
+            "type": "string"
+          },
+          "subAccountId": {
+            "type": "integer"
+          },
+          "subAccountName": {
+            "type": "string"
+          }
+        }
+      },
+      "model.GetDomainDataLite": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "integer"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "updatedAt": {
+            "type": "integer"
+          }
+        }
+      },
+      "model.GetSubAccountResponse": {
+        "type": "object",
+        "properties": {
+          "apiKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.GetAllApiKeysData"
+            }
+          },
+          "companyId": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.GetDomainDataLite"
+            }
+          },
+          "id": {
+            "type": "integer"
+          },
+          "ipPoolId": {
+            "type": "integer"
+          },
+          "ipPoolName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subAccountName": {
+            "type": "string"
+          }
+        }
+      },
+      "model.GetUsageQuotaResponse": {
+        "type": "object",
+        "properties": {
+          "dailyLimit": {
+            "type": "integer"
+          },
+          "emailsQuota": {
+            "type": "integer"
+          },
+          "emailsRemaining": {
+            "type": "integer"
+          },
+          "emailsSent": {
+            "type": "integer"
+          },
+          "maxAttachmentSizeMb": {
+            "type": "integer"
+          },
+          "maxRecipientsPerTransmission": {
+            "type": "integer"
+          },
+          "percentUsed": {
+            "type": "number"
+          },
+          "period": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "rateLimit": {
+            "$ref": "#/components/schemas/model.AccountRateLimit"
+          }
+        }
+      },
+      "model.ListApiKeysDto": {
+        "type": "object",
+        "properties": {
+          "apiKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.GetAllApiKeysData"
+            }
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "model.NewDomainForm": {
+        "required": [
+          "domain"
+        ],
+        "type": "object",
+        "properties": {
+          "assignment": {
+            "type": "string",
+            "description": "Assign domain to, options ALL,PRIMARY",
+            "example": "Share with all Subaccounts"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain name of sending domain",
+            "example": "example.com"
+          },
+          "note": {
+            "type": "string",
+            "description": "Description of sending domain"
+          }
+        }
+      },
+      "model.OpenAPISuppressionResponse": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "model.Permission": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "model.SendingBounceDetailDomain": {
+        "type": "object",
+        "properties": {
+          "assignment": {
+            "type": "string"
+          },
+          "cnameHostname": {
+            "type": "string"
+          },
+          "cnameValue": {
+            "type": "string"
+          },
+          "cnameVerified": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "dkimHostname": {
+            "type": "string"
+          },
+          "dkimPrivateKey": {
+            "type": "string"
+          },
+          "dkimPublicKey": {
+            "type": "string"
+          },
+          "dkimSelector": {
+            "type": "string"
+          },
+          "dkimValue": {
+            "type": "string"
+          },
+          "dkimVerified": {
+            "type": "boolean"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "spfHostname": {
+            "type": "string"
+          },
+          "spfValue": {
+            "type": "string"
+          },
+          "spfVerified": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subAccountId": {
+            "type": "integer"
+          },
+          "subAccountName": {
+            "type": "string"
+          },
+          "trackingDomainId": {
+            "type": "integer"
+          },
+          "trackingDomainName": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "model.SendingDomain": {
+        "type": "object",
+        "properties": {
+          "assignment": {
+            "type": "string"
+          },
+          "companyId": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "integer"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subAccountID": {
+            "type": "integer"
+          },
+          "subAccountName": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "model.SimpleDomain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "model.SubAccount": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "model.SubAccountList": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "subAccounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.SubAccount"
+            }
+          }
+        }
+      },
+      "model.SuggestionData": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          },
+          "spfRecords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suggestion": {
+            "type": "string"
+          }
+        }
+      },
+      "model.TemplateData": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "integer"
+          }
+        }
+      },
+      "model.TemplateForm": {
+        "required": [
+          "html",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "html": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "model.UpdateApiKeyForm": {
+        "type": "object",
+        "properties": {
+          "allowedIp": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissionIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "permissionType": {
+            "type": "string"
+          }
+        }
+      },
+      "model.UpdateSubAccountForm": {
+        "type": "object",
+        "properties": {
+          "ipPoolId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "response.CounterGeneric-model_OpenAPISuppressionResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/model.OpenAPISuppressionResponse"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "apiKey",
+        "description": "Enter your Mailtarget API key with the **Bearer** prefix, e.g. `Bearer YOUR_API_KEY`",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "x-original-swagger-version": "2.0",
+  "externalDocs": {
+    "description": "OpenAPI",
+    "url": "https://swagger.io/resources/open-api/"
+  }
+}

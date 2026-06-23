@@ -1,0 +1,35 @@
+{
+  "application": {
+    "port": "8080",
+    "publicBaseUrl": "http://localhost:8080",
+    "companyId": 42
+  },
+  "clickhouse": {
+    "host": "localhost:9000",
+    "database": "default",
+    "username": "default",
+    "password": ""
+  },
+  "redis": {
+    "addr": "localhost:6379",
+    "password": "",
+    "db": 0
+  },
+  "mailtarget": {
+    "apiKey": "your-api-key",
+    "transmissionUrl": "https://transmission.mailtarget.co/v1",
+    "apiConfigUrl": "https://apiconfig.mailtarget.co/v1"
+  },
+  "alert": {
+    "fromEmail": "alerts@yourdomain.com",
+    "fromName": "Mailtarget Sentinel",
+    "toEmail": "ops@yourdomain.com",
+    "toName": "Ops Team"
+  },
+  "thresholds": {
+    "minVolume": 100,
+    "bounceRateThresholdPct": 5.0,
+    "spamRateThresholdPct": 1.0,
+    "alertCooldownMinutes": 30
+  }
+}

@@ -1,0 +1,46 @@
+# Local secrets
+.env
+.env.local
+.env.*.local
+web/.env
+web/.env.local
+
+# Runtime data
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Go build
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+coverage.out
+coverage.html
+
+# Frontend
+web/node_modules/
+web/dist/
+web/.vite/
+
+# Logs & temp
+*.log
+tmp/
+.temp/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Cursor / editor
+.cursor/

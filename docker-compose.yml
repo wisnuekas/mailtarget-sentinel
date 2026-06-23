@@ -1,0 +1,62 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24-alpine
+    ports:
+      - "8123:8123"   # HTTP (curl, clickhouse-client --host)
+      - "9000:9000"   # Native (Go clickhouse-go driver)
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./scripts/clickhouse/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  sentinel:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      REDIS_ADDR: redis:6379
+      CLICKHOUSE_HOST: clickhouse:9000
+      SQLITE_PATH: /app/data/sentinel.db
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+    volumes:
+      - sentinel_data:/app/data
+
+  dashboard:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web:/app
+    environment:
+      VITE_API_PROXY: http://sentinel:8080
+    depends_on:
+      - sentinel
+
+volumes:
+  clickhouse_data:
+  redis_data:
+  sentinel_data:

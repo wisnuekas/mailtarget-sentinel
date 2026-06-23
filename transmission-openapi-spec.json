@@ -1,0 +1,233 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Mailtarget API",
+    "termsOfService": "https://mailtarget.co/term",
+    "contact": {
+      "name": "Mailtarget API Support",
+      "url": "https://mailtarget.co/contact-us",
+      "email": "support@mailtarget.co"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0"
+  },
+  "externalDocs": {
+    "description": "OpenAPI",
+    "url": "https://swagger.io/resources/open-api/"
+  },
+  "servers": [{ "url": "https://transmission.mailtarget.co/v1" }],
+  "security": [{ "BearerAuth": [] }],
+  "tags": [
+    {
+      "name": "Transmission",
+      "description": "The Transmission API automates email notifications, perfect for tasks like alerts and updates across various industries. It efficiently handles sending emails, whether to single recipients or large lists, using your specified settings.\n\nWith secure HTTPS connections and verified API keys, the API guarantees safe and reliable communication. You can personalize emails by managing recipient details directly through the API or using stored lists with metadata and substitution data.\n"
+    }
+  ],
+  "paths": {
+    "/layang/transmissions": {
+      "post": {
+        "tags": ["Transmission"],
+        "summary": "Email Transmission",
+        "description": "\n## Limitation\n\nPlease note that the Transmission API has a limitation on the overall email size, as the email engine can only accept emails up to a maximum total size of 20 KB, including attachments.\n\n\n## Use Case\n\n*Note: \"Sunrise Bank\" is a fictional name used for illustrative purposes.*\n\nAt Sunrise Bank, keeping clients informed about their transactions and account updates is crucial. To streamline this process, they rely on the Mailtarget Transmission API to automate client notifications and maintain efficient communication channels.\n\nWhen a client, Sarah, makes a significant transaction, the API seamlessly initiates an email notification. It assembles the transaction details, such as the date, amount, and new account balance, into a secure and personalized message. The email reassures Sarah that her transaction was successful and keeps her up-to-date with her account activity.\n\nEach message is sent using a verified API key to ensure confidentiality, delivered directly to Sarah's inbox over a secure connection. This automation means Sarah receives real-time updates, granting her peace of mind and reinforcing trust in Sunrise Bank's commitment to security and transparency.\n\nFor Sunrise Bank, deploying the Mailtarget Transmission API means bolstering client satisfaction by providing timely communications without manual intervention. This approach reduces operational overhead and enhances the customer experience, making banking with Sunrise both easy and reliable.",
+        "requestBody": {
+          "description": "Transmission Form",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/model.TransmissionForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/model.TransmissionData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response.ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "request"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "model.Address": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address",
+            "example": "user@example.com"
+          },
+          "name": { "type": "string", "description": "Name" }
+        }
+      },
+      "model.Attachments": {
+        "type": "object",
+        "properties": {
+          "contentId": { "type": "string" },
+          "disposition": { "type": "string" },
+          "filename": {
+            "type": "string",
+            "description": "The filename of the attachment"
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "The mimetype of the attachment, the value use as `Content-Type` header of generated MIME part for the attachment."
+          },
+          "value": {
+            "type": "string",
+            "description": "The content of the attachment in the form of Base64 encoded string."
+          }
+        }
+      },
+      "model.Header": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Header name" },
+          "value": { "type": "string", "description": "Header value" }
+        }
+      },
+      "model.OptionsAttributes": {
+        "type": "object",
+        "properties": {
+          "clickTracking": { "type": "boolean" },
+          "openTracking": { "type": "boolean" },
+          "transactional": { "type": "boolean" }
+        }
+      },
+      "model.TransmissionData": {
+        "type": "object",
+        "properties": { "transmissionId": { "type": "string" } }
+      },
+      "model.TransmissionForm": {
+        "required": ["from", "subject", "to"],
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Email Subject",
+            "x-order": "00"
+          },
+          "from": {
+            "type": "object",
+            "description": "From address in a form of Address Object",
+            "allOf": [{ "$ref": "#/components/schemas/model.Address" }],
+            "x-order": "01"
+          },
+          "replyTo": {
+            "type": "array",
+            "description": "Array of reply address in a form of Address Object",
+            "items": { "$ref": "#/components/schemas/model.Address" },
+            "x-order": "02"
+          },
+          "to": {
+            "type": "array",
+            "description": "Array of email recipients in a form of Address Object",
+            "items": { "$ref": "#/components/schemas/model.Address" },
+            "x-order": "03"
+          },
+          "cc": {
+            "type": "array",
+            "description": "Array of CC in a form of Address Object",
+            "items": { "$ref": "#/components/schemas/model.Address" },
+            "x-order": "04"
+          },
+          "bcc": {
+            "type": "array",
+            "description": "Array of BCC in a form of Address Object",
+            "items": { "$ref": "#/components/schemas/model.Address" },
+            "x-order": "05"
+          },
+          "bodyText": {
+            "type": "string",
+            "description": "Email text content",
+            "x-order": "06"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "Html content of email",
+            "x-order": "07"
+          },
+          "headers": {
+            "type": "array",
+            "description": "Headers of email",
+            "items": { "$ref": "#/components/schemas/model.Header" },
+            "x-order": "08"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Array of attachment in a form of Attachment Object",
+            "items": { "$ref": "#/components/schemas/model.Attachments" },
+            "x-order": "09"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Email Metadata",
+            "x-order": "10"
+          },
+          "optionsAttributes": {
+            "type": "object",
+            "description": "Options Attributes",
+            "allOf": [
+              { "$ref": "#/components/schemas/model.OptionsAttributes" }
+            ],
+            "x-order": "11"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "Id of template if you using body email from template",
+            "x-order": "12"
+          },
+          "substitutionData": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Array of map data that use as substitution in template. Maximum length of SubstitutionData is 100KB",
+            "x-order": "13"
+          },
+          "allRCPTto": {
+            "type": "array",
+            "items": { "type": "string" },
+            "x-order": "14"
+          }
+        }
+      },
+      "response.ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "x-original-swagger-version": "2.0"
+}
