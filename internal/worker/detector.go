@@ -53,15 +53,33 @@ func (d *Detector) companyFilter(ctx context.Context) *int32 {
 	return service.ResolveCompanyScope(ctx, nil, d.cfg, d.store)
 }
 
+func (d *Detector) companyScopeLabel(ctx context.Context) string {
+	if id := d.companyFilter(ctx); id != nil {
+		return fmt.Sprintf("%d", *id)
+	}
+	return "all"
+}
+
 func (d *Detector) Run(parent context.Context) {
+	started := time.Now()
 	ctx, cancel := context.WithTimeout(parent, d.cfg.WorkerTimeout)
 	defer cancel()
 
+	companyScope := d.companyScopeLabel(ctx)
+
 	settings, err := d.store.GetSettings(ctx)
 	if err != nil {
-		d.logger.Error("worker: load settings failed", "error", err)
+		d.logger.Error("worker: 5m check failed", "stage", "settings", "company_scope", companyScope, "error", err)
 		return
 	}
+
+	d.logger.Info("worker: 5m check started",
+		"window", detectionWindow.String(),
+		"company_scope", companyScope,
+		"min_volume", settings.MinVolume,
+		"bounce_threshold_pct", settings.BounceRateThresholdPct,
+		"spam_threshold_pct", settings.SpamRateThresholdPct,
+	)
 
 	anomalies, err := d.events.DetectAnomalies(
 		ctx,
@@ -72,13 +90,12 @@ func (d *Detector) Run(parent context.Context) {
 		settings.SpamRateThresholdPct,
 	)
 	if err != nil {
-		d.logger.Error("worker: detect anomalies failed", "error", err)
+		d.logger.Error("worker: 5m check failed", "stage", "sub_accounts", "company_scope", companyScope, "error", err)
 		return
 	}
 
 	cooldown := time.Duration(settings.AlertCooldownMinutes) * time.Minute
 	if len(anomalies) > 0 {
-		d.logger.Info("worker: sub-account anomalies detected", "count", len(anomalies))
 		for _, m := range anomalies {
 			d.processAnomaly(ctx, m, cooldown)
 		}
@@ -93,15 +110,21 @@ func (d *Detector) Run(parent context.Context) {
 		settings.SpamRateThresholdPct,
 	)
 	if err != nil {
-		d.logger.Error("worker: detect at-risk sending IPs failed", "error", err)
+		d.logger.Error("worker: 5m check failed", "stage", "sending_ips", "company_scope", companyScope, "error", err)
 		return
 	}
 	if len(sendingIPs) > 0 {
-		d.logger.Info("worker: at-risk sending IPs detected", "count", len(sendingIPs))
 		for _, ip := range sendingIPs {
 			d.processSendingIPAnomaly(ctx, ip, cooldown)
 		}
 	}
+
+	d.logger.Info("worker: 5m check completed",
+		"duration_ms", time.Since(started).Milliseconds(),
+		"company_scope", companyScope,
+		"sub_account_anomalies", len(anomalies),
+		"at_risk_sending_ips", len(sendingIPs),
+	)
 }
 
 func (d *Detector) processAnomaly(ctx context.Context, m chrepo.SubAccountMetrics, cooldown time.Duration) {
