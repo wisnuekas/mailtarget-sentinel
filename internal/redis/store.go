@@ -124,8 +124,8 @@ func (s *Store) TryAcquireAlertLock(ctx context.Context, subAccountID int32, coo
 	return ok, nil
 }
 
-func (s *Store) TryAcquireSendingIPAlertLock(ctx context.Context, companyID int32, sendingIP string, cooldown time.Duration) (bool, error) {
-	key := fmt.Sprintf("%s%d:%s", sendingIPAlertLockPrefix, companyID, sendingIP)
+func (s *Store) TryAcquireSendingIPAlertLock(ctx context.Context, sendingIP string, cooldown time.Duration) (bool, error) {
+	key := fmt.Sprintf("%s%s", sendingIPAlertLockPrefix, sendingIP)
 	ok, err := s.client.SetNX(ctx, key, "1", cooldown).Result()
 	if err != nil {
 		return false, fmt.Errorf("acquire sending IP alert lock: %w", err)

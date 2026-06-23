@@ -51,7 +51,6 @@ type AtRiskDomain struct {
 
 type AtRiskSendingIP struct {
 	chrepo.SendingIPMetrics
-	CompanyName string `json:"company_name,omitempty"`
 }
 
 type AtRiskPayload struct {
@@ -123,7 +122,7 @@ func (e *RiskEnricher) BuildAtRisk(
 	}
 
 	subIDs := make([]int32, 0, len(items))
-	companyIDs := make([]int32, 0, len(summary)+len(sendingIPs))
+	companyIDs := make([]int32, 0, len(summary))
 	domainNames := make([]string, 0, len(domains))
 
 	for _, m := range items {
@@ -131,9 +130,6 @@ func (e *RiskEnricher) BuildAtRisk(
 	}
 	for _, s := range summary {
 		companyIDs = append(companyIDs, s.CompanyID)
-	}
-	for _, ip := range sendingIPs {
-		companyIDs = append(companyIDs, ip.CompanyID)
 	}
 	for _, d := range domains {
 		domainNames = append(domainNames, d.SendingDomain)
@@ -183,11 +179,7 @@ func (e *RiskEnricher) BuildAtRisk(
 
 	enrichedSendingIPs := make([]AtRiskSendingIP, 0, len(sendingIPs))
 	for _, ip := range sendingIPs {
-		row := AtRiskSendingIP{SendingIPMetrics: ip}
-		if c, ok := compMap[ip.CompanyID]; ok {
-			row.CompanyName = c.Name
-		}
-		enrichedSendingIPs = append(enrichedSendingIPs, row)
+		enrichedSendingIPs = append(enrichedSendingIPs, AtRiskSendingIP{SendingIPMetrics: ip})
 	}
 
 	return &AtRiskPayload{

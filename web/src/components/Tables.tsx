@@ -248,8 +248,8 @@ export function SendingIPRiskTable({ sendingIPs }: { sendingIPs: SendingIPMetric
       <table>
         <thead>
           <tr>
-            <th>Company</th>
             <th>Sending IP</th>
+            <th>Companies</th>
             <th>Sent</th>
             <th>Bounce Rate</th>
             <th>Spam Rate</th>
@@ -258,9 +258,9 @@ export function SendingIPRiskTable({ sendingIPs }: { sendingIPs: SendingIPMetric
         </thead>
         <tbody>
           {rows.map((ip) => (
-            <tr key={`${ip.company_id}-${ip.sending_ip}`}>
-              <td>{ip.company_name || ip.company_id}</td>
+            <tr key={ip.sending_ip}>
               <td><strong>{ip.sending_ip}</strong></td>
+              <td className="num">{ip.affected_companies}</td>
               <td className="num">{ip.sent.toLocaleString()}</td>
               <td className="num danger-text">{formatPct(ip.bounce_rate_pct)}</td>
               <td className="num">{formatPct(ip.spam_rate_pct)}</td>

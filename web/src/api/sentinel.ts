@@ -69,8 +69,8 @@ export interface DomainMetrics {
 }
 
 export interface SendingIPMetrics {
-  company_id: number
   sending_ip: string
+  affected_companies: number
   sent: number
   delivered: number
   bounced: number
@@ -78,7 +78,6 @@ export interface SendingIPMetrics {
   bounce_rate_pct: number
   delivery_rate_pct: number
   spam_rate_pct: number
-  company_name?: string
 }
 
 export interface CompanyRow {

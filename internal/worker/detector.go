@@ -222,37 +222,27 @@ func (d *Detector) processAnomaly(ctx context.Context, m chrepo.SubAccountMetric
 }
 
 func (d *Detector) processSendingIPAnomaly(ctx context.Context, m chrepo.SendingIPMetrics, cooldown time.Duration) {
-	acquired, err := d.store.TryAcquireSendingIPAlertLock(ctx, m.CompanyID, m.SendingIP, cooldown)
+	acquired, err := d.store.TryAcquireSendingIPAlertLock(ctx, m.SendingIP, cooldown)
 	if err != nil {
 		d.logger.Error("worker: sending IP alert lock failed",
-			"company_id", m.CompanyID,
 			"sending_ip", m.SendingIP,
 			"error", err,
 		)
 		return
 	}
 	if !acquired {
-		d.logger.Debug("worker: sending IP alert deduplicated",
-			"company_id", m.CompanyID,
-			"sending_ip", m.SendingIP,
-		)
+		d.logger.Debug("worker: sending IP alert deduplicated", "sending_ip", m.SendingIP)
 		return
 	}
 
-	companyName := ""
-	if co, err := d.companies.GetByID(ctx, m.CompanyID); err == nil {
-		companyName = co.Name
-	}
-
 	email := alert.BuildSendingIPEmail(alert.SendingIPEmailInput{
-		CompanyID:   m.CompanyID,
-		CompanyName: companyName,
-		SendingIP:   m.SendingIP,
-		Sent:        m.Sent,
-		Bounced:     m.Bounced,
-		SpamBounced: m.SpamBounced,
-		BounceRate:  m.BounceRatePct,
-		SpamRate:    m.SpamRatePct,
+		SendingIP:         m.SendingIP,
+		AffectedCompanies: m.AffectedCompanies,
+		Sent:              m.Sent,
+		Bounced:           m.Bounced,
+		SpamBounced:       m.SpamBounced,
+		BounceRate:        m.BounceRatePct,
+		SpamRate:          m.SpamRatePct,
 	})
 
 	form := mailtarget.TransmissionForm{
@@ -262,9 +252,9 @@ func (d *Detector) processSendingIPAnomaly(ctx context.Context, m chrepo.Sending
 		BodyText: email.BodyText,
 		BodyHTML: email.BodyHTML,
 		Metadata: map[string]string{
-			"sentinel_type": "sending_ip_review",
-			"company_id":    fmt.Sprintf("%d", m.CompanyID),
-			"sending_ip":    m.SendingIP,
+			"sentinel_type":        "sending_ip_review",
+			"sending_ip":           m.SendingIP,
+			"affected_companies":   fmt.Sprintf("%d", m.AffectedCompanies),
 		},
 		OptionsAttributes: &mailtarget.OptionsAttributes{
 			ClickTracking: false,
@@ -275,7 +265,6 @@ func (d *Detector) processSendingIPAnomaly(ctx context.Context, m chrepo.Sending
 
 	if len(form.To) == 0 {
 		d.logger.Warn("worker: sending IP alert skipped, no OpsTeam recipient configured",
-			"company_id", m.CompanyID,
 			"sending_ip", m.SendingIP,
 		)
 		return
@@ -284,7 +273,6 @@ func (d *Detector) processSendingIPAnomaly(ctx context.Context, m chrepo.Sending
 	result, err := d.transmission.Send(ctx, form)
 	if err != nil {
 		d.logger.Error("worker: send sending IP alert failed",
-			"company_id", m.CompanyID,
 			"sending_ip", m.SendingIP,
 			"error", err,
 		)
@@ -292,8 +280,8 @@ func (d *Detector) processSendingIPAnomaly(ctx context.Context, m chrepo.Sending
 	}
 
 	d.logger.Info("worker: sending IP alert email sent",
-		"company_id", m.CompanyID,
 		"sending_ip", m.SendingIP,
+		"affected_companies", m.AffectedCompanies,
 		"transmission_id", result.TransmissionID,
 		"bounce_rate", m.BounceRatePct,
 		"spam_rate", m.SpamRatePct,

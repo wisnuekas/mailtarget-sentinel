@@ -33,15 +33,15 @@ type DomainMetrics struct {
 }
 
 type SendingIPMetrics struct {
-	CompanyID       int32   `json:"company_id"`
-	SendingIP       string  `json:"sending_ip"`
-	Sent            uint64  `json:"sent"`
-	Delivered       uint64  `json:"delivered"`
-	Bounced         uint64  `json:"bounced"`
-	SpamBounced     uint64  `json:"spam_bounced"`
-	BounceRatePct   float64 `json:"bounce_rate_pct"`
-	DeliveryRatePct float64 `json:"delivery_rate_pct"`
-	SpamRatePct     float64 `json:"spam_rate_pct"`
+	SendingIP         string  `json:"sending_ip"`
+	AffectedCompanies uint64  `json:"affected_companies"`
+	Sent              uint64  `json:"sent"`
+	Delivered         uint64  `json:"delivered"`
+	Bounced           uint64  `json:"bounced"`
+	SpamBounced       uint64  `json:"spam_bounced"`
+	BounceRatePct     float64 `json:"bounce_rate_pct"`
+	DeliveryRatePct   float64 `json:"delivery_rate_pct"`
+	SpamRatePct       float64 `json:"spam_rate_pct"`
 }
 
 type CompanyRiskSummary struct {
@@ -297,8 +297,8 @@ func (r *EventRepository) DetectAtRiskSendingIPs(
 
 	query := fmt.Sprintf(`
 SELECT
-    company_id,
     sending_ip,
+    affected_companies,
     sent,
     delivered,
     bounced,
@@ -308,8 +308,8 @@ SELECT
     if(sent > 0, spam_bounced / sent * 100, 0) AS spam_rate_pct
 FROM (
     SELECT
-        company_id,
         sending_ip,
+        uniqExact(company_id) AS affected_companies,
         countIf(type = 'injection') AS sent,
         countIf(type = 'delivery') AS delivered,
         countIf(type = 'bounce') AS bounced,
@@ -319,7 +319,7 @@ FROM (
       AND injection_time < now()
       AND sending_ip IS NOT NULL
       AND sending_ip != ''%s
-    GROUP BY company_id, sending_ip
+    GROUP BY sending_ip
     HAVING sent >= ?
 )
 WHERE bounce_rate_pct > ? OR spam_rate_pct > ?
@@ -336,8 +336,8 @@ ORDER BY bounce_rate_pct DESC
 	for rows.Next() {
 		var m SendingIPMetrics
 		if err := rows.Scan(
-			&m.CompanyID,
 			&m.SendingIP,
+			&m.AffectedCompanies,
 			&m.Sent,
 			&m.Delivered,
 			&m.Bounced,
